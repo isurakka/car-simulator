@@ -73,17 +73,20 @@ namespace CarSimulator
 
     class Program
     {
+        const float step = 1f / 200f;
         static void Main(string[] args)
         {
             // Tuning parameters
             const float wheelDistance = 50f;
             const float wheelFrontOffset = 50f;
-            const float sensorRadius = 2f;
-            const float sensorSpacing = 1f;
+            const float sensorRadius = 1f;
+            const float sensorSpacing = 2f;
             const float plateSensorOverflow = 10f;
             const float wheelWidth = 10f;
             const float wheelHeight = 25f;
-            const float linearDamping = 1f;
+            const float linearDamping = 3f;
+            const float angularDamping = 8f;
+            const float inertia = 1f;
             const float trackWidth = 5f;
             const float trackThickWidth = 12f;
             const int trackSampleDivision = 20;
@@ -101,9 +104,11 @@ namespace CarSimulator
 
             // Init physics
             var world = new World(new Vector2f());
-            var carBody = new Body(world, new Vector2f(100f, 600f).DisplayToSim());
+            var carBody = new Body(world, new Vector2f(300f, 400f).DisplayToSim(), 90f);
+            carBody.Inertia = inertia;
             carBody.IsBullet = true;
             carBody.LinearDamping = linearDamping;
+            carBody.AngularDamping = angularDamping;
             var leftWheel = FixtureFactory.AttachRectangle(wheelWidth.DisplayToSim(), wheelHeight.DisplayToSim(), 1f,
                 leftWheelLocalPos.DisplayToSim(), carBody);
             var rightWheel = FixtureFactory.AttachRectangle(wheelWidth.DisplayToSim(), wheelHeight.DisplayToSim(), 1f,
@@ -124,7 +129,8 @@ namespace CarSimulator
                     leftWheelLocalPos + new Vector2f(wheelWidth / 2f, wheelHeight / 2f),
                     leftWheelLocalPos + new Vector2f(wheelWidth / 2f, -wheelHeight / 2f),
                 }.Select(v => v.ToSim().ToXNA())), 1f, carBody);
-            carBody.BodyType = BodyType.Dynamic;
+            carBody.BodyType = BodyType.Kinematic;
+            var car = new Car(carBody);
 
             // Create track
             var trackSpline = new List<SplineCurve> 
@@ -152,9 +158,11 @@ namespace CarSimulator
 
             var time = 0f;
             var acc = 0f;
-            var step = 1f / 1000f;
+            //var step = 1f / 10000f;
             var sw = new Stopwatch();
             sw.Start();
+
+            int lastTurn = 0;
 
             // Main loop
             while (rw.IsOpen)
@@ -171,9 +179,30 @@ namespace CarSimulator
                 {
                     acc -= step;
                     time += step;
-                    world.Step(step);
 
-                    carBody.ApplyForce(new Vector2f(0f, -1f));
+                    //carBody.ApplyForce(new Vector2f(0f, -1f));
+                    //Turn(-1, carBody, rightWheelLocalPos, leftWheelLocalPos);
+                    
+                    
+                    if (!CheckSensor(leftSensor, trackBody))
+                    {
+                        lastTurn = -1;
+                        //Turn(1, carBody, rightWheelLocalPos, leftWheelLocalPos);
+                    }
+                    else if (!CheckSensor(rightSensor, trackBody))
+                    {
+                        lastTurn = 1;
+                        //Turn(-1, carBody, rightWheelLocalPos, leftWheelLocalPos);
+                    }
+                    else
+                    {
+                        //Turn(0, carBody, rightWheelLocalPos, leftWheelLocalPos);
+                    }
+
+                    Turn(lastTurn, carBody, rightWheelLocalPos, leftWheelLocalPos);
+                    
+
+                    world.Step(step);
                 }
 
                 BodyRenderer.DrawBody(trackBody, rw, null, null, Color.Black);
@@ -186,6 +215,70 @@ namespace CarSimulator
 
                 rw.Display();
             }
+        }
+
+        /*public static void Turn(int dir, Body body, Vector2f rightWheelLocalPos, Vector2f leftWheelLocalPos)
+        {
+            var sign = Math.Sign(dir);
+            const float force = -1f;
+            const float oppositeDiv = 1.018f;
+            if (sign < 0)
+            {
+                body.ApplyForce(new Vector2f(0f, force).RotateRadians(body.Rotation), body.GetWorldPoint(rightWheelLocalPos));
+                body.ApplyForce(new Vector2f(0f, force / oppositeDiv).RotateRadians(body.Rotation), body.GetWorldPoint(leftWheelLocalPos));
+            }
+            else if (sign > 0)
+            {
+                body.ApplyForce(new Vector2f(0f, force).RotateRadians(body.Rotation), body.GetWorldPoint(leftWheelLocalPos));
+                body.ApplyForce(new Vector2f(0f, force / oppositeDiv).RotateRadians(body.Rotation), body.GetWorldPoint(rightWheelLocalPos));
+            }
+            else
+            {
+                body.ApplyForce(new Vector2f(0f, force).RotateRadians(body.Rotation), body.GetWorldPoint(rightWheelLocalPos));
+                body.ApplyForce(new Vector2f(0f, force).RotateRadians(body.Rotation), body.GetWorldPoint(leftWheelLocalPos));
+            }
+        }*/
+
+        public static void Turn(int dir, Body body, Vector2f rightWheelLocalPos, Vector2f leftWheelLocalPos)
+        {
+            var sign = Math.Sign(dir);
+            const float force = -300f * step;
+            const float rotate = 400f * step;
+            if (sign < 0)
+            {
+                body.Position += new Vector2f(0f, force).ToSim().RotateRadians(body.Rotation);
+                body.Rotation -= MathExtender.DegreeToRadian(rotate);
+            }
+            else if (sign > 0)
+            {
+                body.Position += new Vector2f(0f, force).ToSim().RotateRadians(body.Rotation);
+                body.Rotation += MathExtender.DegreeToRadian(rotate);
+            }
+            else
+            {
+                body.Position += new Vector2f(0f, force).ToSim().RotateRadians(body.Rotation);
+                //body.Rotation += MathExtender.DegreeToRadian(rotate);
+            }
+        }
+
+        public static bool CheckSensor(Fixture sensor, Body trackBody)
+        {
+            var sensorWorldPoints = sensor.GetWorldVertices();
+            foreach (var fix in trackBody.FixtureList)
+            {
+                var trackWorldPoints = fix.GetWorldVertices();
+                foreach (var sensorPoint in sensorWorldPoints)
+	            {
+                    var refSensorPoint = sensorPoint;
+                    var pip = trackWorldPoints.PointInPolygon(ref refSensorPoint);
+                    if (pip == 1 || pip == 0)
+                    {
+                        return true;
+                    }
+	            }
+            }
+
+            return false;
         }
 
         public static Body CreateTrack(World world, IEnumerable<SplineCurve> spline, int sampleDivision)
