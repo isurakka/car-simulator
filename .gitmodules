@@ -1,0 +1,3 @@
+[submodule "FarseerPhysicsEngine"]
+	path = FarseerPhysicsEngine
+	url = https://github.com/isurakka/FarseerPhysicsEngine-fork.git

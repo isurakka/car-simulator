@@ -194,3 +194,9 @@ FakesAssemblies/
 
 # Visual Studio 6 workspace options file
 *.opt
+
+# Dependencies
+SFML.Net/
+
+# CarSimulator costura embed
+CarSimulator/costura64/*

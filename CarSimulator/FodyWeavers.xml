@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Weavers>
+  <Costura CreateTemporaryAssemblies="true">
+    <PreloadOrder>
+      csfml-system-2
+      csfml-graphics-2
+      csfml-window-2
+      openal32
+      libsndfile-1
+      csfml-audio-2
+    </PreloadOrder>
+  </Costura>
+</Weavers>
