@@ -73,14 +73,14 @@ namespace CarSimulator
 
     class Program
     {
-        const float step = 1f / 200f;
+        const float step = 1f / 240f;
         static void Main(string[] args)
         {
             // Tuning parameters
             const float wheelDistance = 50f;
             const float wheelFrontOffset = 50f;
-            const float sensorRadius = 1f;
-            const float sensorSpacing = 2f;
+            const float sensorRadius = 1.5f;
+            const float sensorSpacing = 3f;
             const float plateSensorOverflow = 10f;
             const float wheelWidth = 10f;
             const float wheelHeight = 25f;
@@ -104,7 +104,7 @@ namespace CarSimulator
 
             // Init physics
             var world = new World(new Vector2f());
-            var carBody = new Body(world, new Vector2f(300f, 400f).DisplayToSim(), 90f);
+            var carBody = new Body(world, new Vector2f(300f, 420f).DisplayToSim(), MathExtender.DegreeToRadian(80f));
             carBody.Inertia = inertia;
             carBody.IsBullet = true;
             carBody.LinearDamping = linearDamping;
@@ -180,23 +180,15 @@ namespace CarSimulator
                     acc -= step;
                     time += step;
 
-                    //carBody.ApplyForce(new Vector2f(0f, -1f));
                     //Turn(-1, carBody, rightWheelLocalPos, leftWheelLocalPos);
-                    
-                    
+
                     if (!CheckSensor(leftSensor, trackBody))
                     {
                         lastTurn = -1;
-                        //Turn(1, carBody, rightWheelLocalPos, leftWheelLocalPos);
                     }
                     else if (!CheckSensor(rightSensor, trackBody))
                     {
                         lastTurn = 1;
-                        //Turn(-1, carBody, rightWheelLocalPos, leftWheelLocalPos);
-                    }
-                    else
-                    {
-                        //Turn(0, carBody, rightWheelLocalPos, leftWheelLocalPos);
                     }
 
                     Turn(lastTurn, carBody, rightWheelLocalPos, leftWheelLocalPos);
@@ -243,7 +235,7 @@ namespace CarSimulator
         {
             var sign = Math.Sign(dir);
             const float force = -300f * step;
-            const float rotate = 400f * step;
+            const float rotate = 300f * step;
             if (sign < 0)
             {
                 body.Position += new Vector2f(0f, force).ToSim().RotateRadians(body.Rotation);
