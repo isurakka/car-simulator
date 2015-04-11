@@ -130,7 +130,6 @@ namespace CarSimulator
                     leftWheelLocalPos + new Vector2f(wheelWidth / 2f, -wheelHeight / 2f),
                 }.Select(v => v.ToSim().ToXNA())), 1f, carBody);
             carBody.BodyType = BodyType.Kinematic;
-            var car = new Car(carBody);
 
             // Create track
             var trackSpline = new List<SplineCurve> 

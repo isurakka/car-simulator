@@ -74,7 +74,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Car.cs" />
     <Compile Include="Helpers\BodyRenderer.cs" />
     <Compile Include="Helpers\ConvertManager.cs" />
     <Compile Include="Helpers\FixtureExtender.cs" />
